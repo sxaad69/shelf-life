@@ -1,0 +1,8 @@
+{
+  "url": "https://sxaad69.github.io/shelf-life/",
+  "checks_total": 12,
+  "checks_failed": 0,
+  "console_errors": [],
+  "solver_line": "[solver] independent brute-force found 1 valid arrangement(s):",
+  "verdict": "RUNNABLE"
+}
