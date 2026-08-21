@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHELF LIFE — rule-badge greybox (W1 feeler)</title>
+<style>
+  :root{
+    --bg:#171a21; --panel:#232833; --line:#39404f; --ink:#e8ecf4; --dim:#9aa3b5;
+    --good:#3ddc84; --bad:#ff5c74; --warn:#ffc857;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);min-height:100vh;font-family:"Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:18px 12px 40px;}
+  h1{font-size:26px;letter-spacing:3px;}
+  .sub{color:var(--dim);font-size:13px;margin:4px 0 16px;text-align:center;}
+  /* 1 · STAGING TRAY */
+  #trayPanel{width:min(880px,96vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px 14px;}
+  #trayPanel h2{font-size:13px;color:var(--dim);letter-spacing:2px;margin-bottom:8px;}
+  #tray{display:flex;gap:10px;flex-wrap:wrap;min-height:86px;}
+  .trayItem{width:92px;height:76px;border-radius:12px;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;user-select:none;border:2px solid rgba(0,0,0,.35);box-shadow:0 3px 6px rgba(0,0,0,.35);transition:transform .08s;}
+  .trayItem:hover{transform:translateY(-3px);}
+  .trayItem.selected{outline:3px solid #fff;outline-offset:2px;transform:translateY(-5px);}
+  .itemGlyph{font-size:30px;font-weight:800;text-shadow:0 2px 3px rgba(0,0,0,.45);}
+  .tagRow{position:absolute;bottom:4px;left:0;right:0;display:flex;justify-content:center;gap:4px;}
+  .tag{background:rgba(0,0,0,.55);color:#fff;border-radius:5px;padding:1px 5px;font-size:11px;font-weight:700;}
+  .flipped{opacity:.55;}
+  /* 2 · RULE-BADGE SHELF GRID */
+  #shelfWrap{width:min(880px,96vw);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px 16px;margin-top:16px;}
+  #badges{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:14px;}
+  .badge{display:flex;align-items:center;gap:8px;border-radius:999px;padding:8px 16px;font-weight:800;font-size:15px;border:2px solid var(--line);color:var(--dim);background:#1c2029;}
+  .badge .dot{width:14px;height:14px;border-radius:50%;background:var(--line);}
+  .badge.active{border-color:var(--bc);color:var(--ink);background:var(--bc);}
+  .badge.active .dot{background:#fff;}
+  .badge.ok{border-color:var(--good);background:rgba(61,220,132,.15);color:var(--good);}
+  .badge.violated{border-color:var(--bad);background:rgba(255,92,116,.15);color:var(--bad);}
+  #shelves{display:flex;gap:14px;justify-content:center;}
+  .bayCol{display:flex;flex-direction:column;width:180px;}
+  .bayHead{text-align:center;color:var(--dim);font-size:11px;letter-spacing:1px;margin-bottom:5px;}
+  .cellStack{display:flex;flex-direction:column-reverse;gap:4px;} /* DOM order front->back, visual back-top */
+  .cell{height:64px;border-radius:12px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;}
+  .cell.filled{border-style:solid;border-color:rgba(0,0,0,.35);box-shadow:0 3px 6px rgba(0,0,0,.35);}
+  .cell.selected{outline:3px solid #fff;outline-offset:2px;}
+  .backCell{height:50px;}
+  /* 3 · OPEN SHOP AUDIT */
+  #auditBtn{margin:22px auto 0;display:block;background:var(--warn);color:#241a00;border:none;border-radius:12px;font-size:20px;font-weight:900;letter-spacing:2px;padding:14px 46px;cursor:pointer;box-shadow:0 5px 0 #a97f22;}
+  #auditBtn:hover{filter:brightness(1.07);}
+  #auditBtn:active{transform:translateY(3px);box-shadow:0 2px 0 #a97f22;}
+  #verdict{margin-top:14px;min-height:56px;text-align:center;font-size:16px;font-weight:700;}
+  .verdict-ok{color:var(--good);} .verdict-bad{color:var(--bad);}
+  .foot{margin-top:22px;color:var(--dim);font-size:11px;max-width:720px;line-height:1.6;text-align:center;}
+</style>
+</head>
+<body>
+<h1>SHELF LIFE</h1>
+<div class="sub">restock so every RULE badge goes green — click item &rarr; click slot &middot; click again to swap &middot; right-click flips facing</div>
+
+<div id="trayPanel">
+  <h2>DELIVERY TRAY — TODAY'S STOCK</h2>
+  <div id="tray"></div>
+</div>
+
+<div id="shelfWrap">
+  <div id="badges"></div>
+  <div id="shelves"></div>
+</div>
+
+<button id="auditBtn">OPEN SHOP</button>
+<div id="verdict"></div>
+
+<div class="foot">
+  RULES: <b>FACING</b> label-out (&#8594;) &middot; <b>WEIGHT</b> heavy below light per bay &middot;
+  <b>ADJACENCY</b> same category together across bays &middot; <b>FIFO</b> earliest expiry at front.
+  Greybox feeler (throwaway). Generator = answer key: valid arrangement manifest printed to console.
+  Seed: <span id="seedTag"></span> (<a href="#" id="reroll" style="color:#7fb2ff">reroll</a>)
+</div>
+
+<script>
+"use strict";
+/* SHELF LIFE W1 greybox — throwaway per pinned rule 12.
+   Categories P/D/M/B · weight L/M/H = 1/2/3 · expiry = day number (low = soon).
+   Canonical shelf scan order drives FIFO + ADJACENCY:
+     for each bay left->right: FRONT cell then BACK cell.            */
+
+/* ---------- seeded RNG ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const params=new URLSearchParams(location.search);
+let SEED=parseInt(params.get("seed")||"0",10)||((Date.now()%100000)|0);
+let rng=mulberry32(SEED);
+function rngInt(n){return Math.floor(rng()*n);}
+
+/* ---------- constants ---------- */
+const CATS={P:{name:"Produce",col:"#6fce62"},D:{name:"Dairy",col:"#f2b134"},M:{name:"Meat",col:"#e05263"},B:{name:"Bakery",col:"#b78bf0"}};
+const WEIGHTS=["","L","M","H"];
+const RULES=[
+ {id:"FACING",   label:"LABELS FACE OUT"},
+ {id:"WEIGHT",   label:"HEAVY BELOW LIGHT"},
+ {id:"ADJACENCY",label:"CATEGORY ADJACENCY"},
+ {id:"FIFO",     label:"FIFO OLDEST FRONT"},
+];
+const SLOTS=4;
+
+/* ---------- state ---------- */
+let trayItems=[];                 // remaining delivery items
+let shelf=[[],[],[],[]];          // shelf[bay] = [FRONT item|null, BACK item|null]
+let selected=null;                // {from:'tray',idx} | {from:'shelf',bay,row}
+let audited=false;
+
+/* ==========================================================
+   GENERATOR = ANSWER KEY
+   Build a VALID arrangement by construction:
+   1) random category run-order -> fills scan cells in pairs
+   2) expiry non-decreasing along scan (FIFO holds)
+   3) front weight >= back weight per bay (WEIGHT holds)
+   4) all faceOut (FACING holds)
+   Then scramble placement into the tray. The independent
+   brute-force solver must still find >=1 manifest per seed,
+   or the seed is rejected (regenerated).
+   ========================================================== */
+function generate(){
+  for(;;){
+    rng=mulberry32(SEED);
+    const catOrder=Object.keys(CATS).sort(()=>rng()-0.5);
+    const items=[];
+    let e=1+rngInt(4);
+    for(let pair=0;pair<4;pair++){                 // one category pair per bay
+      const cat=catOrder[pair];
+      const wFront=1+rngInt(3);
+      items.push({cat,w:wFront,exp:e,faceOut:true});          // FRONT of bay
+      e+=1+rngInt(3);                                        // strict scan-order monotonic
+      items.push({cat,w:1+rngInt(wFront),exp:e,faceOut:true}); // BACK of bay
+      e+=1+rngInt(3);
+    }
+    // scramble: shuffle copy into tray
+    const tray=items.slice();
+    for(let i=tray.length-1;i>0;i--){const j=rngInt(i+1);[tray[i],tray[j]]=[tray[j],tray[i]];}
+    // answer-key proof: independent solver over all 40320 placements
+    const sols=solveAll(tray);
+    if(sols.length>0)return {tray,sols,valid:items};
+    SEED++; // degenerate seed — reject, advance, retry
+  }
+}
+
+/* brute-force solver: every permutation x facing-free => check rules */
+function solveAll(items){
+  const found=[];
+  const idx=[0,1,2,3,4,5,6,7];
+  function rec(cur,left){
+    if(found.length>=3)return;
+    if(cur.length===8){
+      const at=k=>items[cur[k]];
+      // WEIGHT: front(w)>=back(w) per bay
+      for(let s=0;s<4;s++)if(at(s*2).w<at(s*2+1).w)return;
+      // FIFO: expiry non-decreasing along scan
+      for(let k=1;k<8;k++)if(at(k).exp<at(k-1).exp)return;
+      // ADJACENCY: each category's scan positions contiguous
+      const pos={};
+      cur.forEach((ii,k)=>{(pos[items[ii].cat]??=[]).push(k);});
+      for(const c in pos){const ps=pos[c];if(ps[ps.length-1]-ps[0]!==ps.length-1)return;}
+      found.push(cur.map(ii=>{const t=items[ii];return t.cat+"(W"+WEIGHTS[t.w]+",EXP"+t.exp+")";}));
+      return;
+    }
+    for(let i=0;i<left.length;i++){
+      cur.push(left[i]);
+      rec(cur,left.slice(0,i).concat(left.slice(i+1)));
+      cur.pop();
+      if(found.length>=3)return;
+    }
+  }
+  rec([],idx);
+  return found;
+}
+
+/* ---------- runtime audit (what OPEN SHOP checks) ---------- */
+function allSlotsFull(){return shelf.every(col=>col[0]&&col[1]);}
+function scanOrder(){const o=[];for(let s=0;s<SLOTS;s++)o.push(shelf[s][0],shelf[s][1]);return o;}
+function audit(){
+  const placed=shelf.flat().filter(Boolean);
+  const res={};
+  res.FACING=trayItems.length===0&&placed.every(it=>it.faceOut)&&allSlotsFull();
+  res.WEIGHT=allSlotsFull()&&shelf.every(col=>col[0].w>=col[1].w);
+  const scan=scanOrder();
+  const byCat={};
+  scan.forEach((it,k)=>{if(it)(byCat[it.cat]??=[]).push(k);});
+  res.ADJACENCY=allSlotsFull()&&Object.values(byCat).every(ps=>ps[ps.length-1]-ps[0]===ps.length-1);
+  let fifo=allSlotsFull(),prev=null;
+  scan.forEach(it=>{if(!it)return;if(prev!==null&&it.exp<prev)fifo=false;prev=it.exp;});
+  res.FIFO=fifo;
+  return res;
+}
+
+/* ---------- DOM rendering ---------- */
+function glyphFor(it){return it.faceOut?it.cat+"\u2192":"\u00bf"+it.cat+"?";}
+function renderTray(){
+  const el=document.getElementById("tray");el.innerHTML="";
+  trayItems.forEach((it,i)=>{
+    const d=document.createElement("div");
+    d.className="trayItem"+((selected&&selected.from==="tray"&&selected.idx===i)?" selected":"")+(it.faceOut?"":" flipped");
+    d.style.background=CATS[it.cat].col;
+    d.innerHTML=`<span class="itemGlyph">${glyphFor(it)}</span><span class="tagRow"><span class="tag">W:${WEIGHTS[it.w]}</span><span class="tag">EXP:${it.exp}</span></span>`;
+    d.onclick=()=>{selected=(selected&&selected.from==="tray"&&selected.idx===i)?null:{from:"tray",idx:i};clearAudit();render();};
+    d.oncontextmenu=ev=>{ev.preventDefault();it.faceOut=!it.faceOut;clearAudit();render();};
+    el.appendChild(d);
+  });
+  if(!trayItems.length)el.innerHTML='<span style="color:#5b6373;font-size:13px;">tray empty — all items shelved</span>';
+}
+function renderShelf(){
+  const el=document.getElementById("shelves");el.innerHTML="";
+  for(let s=0;s<SLOTS;s++){
+    const col=document.createElement("div");col.className="bayCol";
+    const head=document.createElement("div");head.className="bayHead";head.textContent="BAY "+(s+1);
+    col.appendChild(head);
+    const stack=document.createElement("div");stack.className="cellStack";
+    [[0,"frontCell"],[1,"backCell"]].forEach(([r,cls])=>{
+      const cell=document.createElement("div");
+      const it=shelf[s][r];
+      cell.className="cell "+cls+(it?" filled":"")+((selected&&selected.from==="shelf"&&selected.bay===s&&selected.row===r)?" selected":"");
+      if(it){
+        cell.style.background=CATS[it.cat].col;
+        cell.classList.toggle("flipped",!it.faceOut);
+        cell.innerHTML=`<span class="itemGlyph">${glyphFor(it)}</span><span class="tagRow"><span class="tag">W:${WEIGHTS[it.w]}</span><span class="tag">EXP:${it.exp}</span></span>`;
+      }else{
+        cell.textContent=r===0?"FRONT":"BACK";cell.style.color="#5b6373";
+      }
+      cell.onclick=()=>{
+        if(!selected){if(it)selected={from:"shelf",bay:s,row:r};clearAudit();render();return;}
+        if(selected.from==="tray"){
+          const t=trayItems[selected.idx],cur=shelf[s][r];
+          shelf[s][r]=t;
+          if(cur)trayItems[selected.idx]=cur;else trayItems.splice(selected.idx,1);
+        }else{
+          const {bay:aB,row:aR}=selected;
+          [shelf[aB][aR],shelf[s][r]]=[shelf[s][r],shelf[aB][aR]];
+        }
+        selected=null;clearAudit();render();
+      };
+      cell.oncontextmenu=ev=>{ev.preventDefault();if(shelf[s][r]){shelf[s][r].faceOut=!shelf[s][r].faceOut;clearAudit();render();}};
+      stack.appendChild(cell);
+    });
+    col.appendChild(stack);
+    el.appendChild(col);
+  }
+}
+function renderBadges(res){
+  const el=document.getElementById("badges");el.innerHTML="";
+  RULES.forEach(r=>{
+    const d=document.createElement("div");
+    d.className="badge active"+(res?(res[r.id]?" ok":" violated"):"");
+    d.innerHTML=`<span class="dot"></span>${r.label}${res?(res[r.id]?" \u2713":" \u2717"):""}`;
+    el.appendChild(d);
+  });
+}
+function render(){renderBadges(audited?audit():null);renderTray();renderShelf();}
+function clearAudit(){audited=false;document.getElementById("verdict").innerHTML="";document.getElementById("verdict").className="";}
+
+/* ---------- debug chime (spec allows tone only) ---------- */
+function chime(good){
+  try{
+    const ac=window.__ac||(window.__ac=new (window.AudioContext||window.webkitAudioContext)());
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=good?"triangle":"square";
+    g.gain.setValueAtTime(.07,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.25);
+    o.connect(g);g.connect(ac.destination);
+    if(good){o.frequency.setValueAtTime(660,ac.currentTime);o.frequency.setValueAtTime(990,ac.currentTime+.09);}
+    else{o.frequency.value=170;}
+    o.start();o.stop(ac.currentTime+.25);
+  }catch(e){}
+}
+
+/* ---------- OPEN SHOP audit button ---------- */
+document.getElementById("auditBtn").onclick=()=>{
+  audited=true;
+  const res=audit();
+  renderBadges(res);
+  const v=document.getElementById("verdict");
+  const bad=RULES.filter(r=>!res[r.id]);
+  if(bad.length===0){
+    v.className="verdict-ok";v.textContent="\u2713 SHOP OPEN — every rule satisfied. Tidy.";
+    chime(true);
+  }else{
+    v.className="verdict-bad";v.textContent="\u2717 VIOLATION — "+bad.map(r=>r.label).join(" · ");
+    chime(false);
+  }
+};
+
+/* ---------- boot ---------- */
+function boot(newSeed){
+  if(newSeed!==undefined){SEED=newSeed;history.replaceState(null,"","?seed="+SEED);}
+  const gen=generate();
+  trayItems=gen.tray.slice();
+  shelf=[[],[],[],[]].map(()=>[null,null]);
+  selected=null;audited=false;
+  clearAudit();
+  document.getElementById("seedTag").textContent=SEED;
+  render();
+  console.log("%c[SHELF LIFE answer key] seed="+SEED,"color:#3ddc84;font-weight:bold");
+  console.log("constructed valid arrangement:",gen.valid.map(it=>it.cat+"(W"+WEIGHTS[it.w]+",EXP"+it.exp+")").join(" | "));
+  console.log("[solver] independent brute-force found "+gen.sols.length+" valid arrangement(s):");
+  gen.sols.slice(0,3).forEach(m=>console.log("  OK",m.join(" -> ")));
+  console.table(gen.tray.map((it,i)=>({tray:i,cat:it.cat,w:WEIGHTS[it.w],exp:it.exp})));
+}
+document.getElementById("reroll").onclick=e=>{e.preventDefault();boot(SEED+1);};
+boot();
+</script>
+</body>
+</html>
