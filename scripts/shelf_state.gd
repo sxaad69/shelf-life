@@ -254,7 +254,7 @@ func solve_all(items: Array, rules: Array, max_found: int = 3) -> Array:
 		if it == null:
 			weights.append(-1)
 			exps.append(-1)
-			cats.append("\u0000NULL")   # never matches a real category
+			cats.append("~NULL~")   # never matches a real category
 		else:
 			weights.append(it["w"])
 			exps.append(it["exp"])
