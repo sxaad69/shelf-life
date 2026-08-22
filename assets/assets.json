@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "project": "Shelf Life",
+  "notes": "Full-build W2 asset set. All audio is generated-original via tools/gen_sfx.js (procedural synthesis, jsfxr-style recipes mirrored in scripts/game_audio.gd) — zero license risk, no downloads. Branding/thumbnail generated deterministically by tools/gen_thumbnail.py (Pillow). No third-party assets shipped.",
+  "assets": [
+    {"id": "place_thock", "role": "item placement SFX", "path": "assets/audio/place_thock.ogg", "format": "OGG 22kHz mono", "source": {"kind": "generated-original", "url_or_tool": "tools/gen_sfx.js (procedural)", "creator": "engineering (hermes.agency)", "created_at": "2026-08-22", "license": "project-owned"}},
+    {"id": "badge_chime", "role": "rule-satisfied chime", "path": "assets/audio/badge_chime.ogg", "format": "OGG 22kHz mono", "source": {"kind": "generated-original", "url_or_tool": "tools/gen_sfx.js", "creator": "engineering (hermes.agency)", "created_at": "2026-08-22", "license": "project-owned"}},
+    {"id": "spoil_buzz", "role": "violation buzz", "path": "assets/audio/spoil_buzz.ogg", "format": "OGG 22kHz mono", "source": {"kind": "generated-original", "url_or_tool": "tools/gen_sfx.js", "creator": "engineering (hermes.agency)", "created_at": "2026-08-22", "license": "project-owned"}},
+    {"id": "shop_bell", "role": "OPEN SHOP success bell", "path": "assets/audio/shop_bell.ogg", "format": "OGG 22kHz mono", "source": {"kind": "generated-original", "url_or_tool": "tools/gen_sfx.js", "creator": "engineering (hermes.agency)", "created_at": "2026-08-22", "license": "project-owned"}},
+    {"id": "hint_ping", "role": "hint/flip UI blip", "path": "assets/audio/hint_ping.ogg", "format": "OGG 22kHz mono", "source": {"kind": "generated-original", "url_or_tool": "tools/gen_sfx.js", "creator": "engineering (hermes.agency)", "created_at": "2026-08-22", "license": "project-owned"}},
+    {"id": "shop_loop", "role": "mellow ambient shop loop (~7.5s seamless)", "path": "assets/audio/shop_loop.ogg", "format": "OGG 22kHz mono", "source": {"kind": "generated-original", "url_or_tool": "tools/gen_sfx.js", "creator": "engineering (hermes.agency)", "created_at": "2026-08-22", "license": "project-owned"}}
+  ]
+}

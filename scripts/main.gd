@@ -121,8 +121,10 @@ func _build_ui() -> void:
 	# --- shelf panel ---
 	var shelf_panel := PanelContainer.new()
 	shelf_panel.add_theme_stylebox_override("panel", _panel_style(COL_PANEL, COL_LINE))
+	shelf_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(shelf_panel)
 	var sv := VBoxContainer.new()
+	sv.alignment = BoxContainer.ALIGNMENT_CENTER
 	sv.add_theme_constant_override("separation", 6)
 	shelf_panel.add_child(sv)
 	shelf_row = HBoxContainer.new()
@@ -266,7 +268,7 @@ func _render_shelf() -> void:
 
 func _make_cell(bay: int, row: int) -> PanelContainer:
 	var cell := PanelContainer.new()
-	cell.custom_minimum_size = Vector2(150, 62)
+	cell.custom_minimum_size = Vector2(190, 78)
 	var sb := _panel_style(Color(0, 0, 0, 0), COL_LINE, 12)
 	if row == 1:
 		sb.set_corner_radius_all(10)
