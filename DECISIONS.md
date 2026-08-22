@@ -12,3 +12,8 @@
 - D10: Thumbnail = rule-badge-forward SVG->PNG (badges dominating frame, shelf mini-scene behind), generated deterministically via Python+Pillow; lands in assets/branding/ + cover/. Launch condition per spec.
 - D11: Rule 8 monetization set: revenue model + genre benchmarks written to docs/monetization.md BEFORE release gate; build itself ships ad-hook stubs only.
 - D12: Tests: `tests/` run headless via a `--script` harness (determinism across seeds, solver finds ≥1 solution for N seeds, audit agrees with solver verdict on solved/permuted states, difficulty stages activate correct rule subsets).
+- D13: QA bridge (web-only): main.gd publishes full state + live control rects to `window.__SL_STATE` via JavaScriptBridge after layout (deferred 2 frames). Enabled rule-16 playthrough: real CDP/X11 clicks through actual UI, no state injection.
+- D14: Playthrough found a real defect — item cards had MOUSE_FILTER_IGNORE so tray clicks passed through (game unplayable by mouse). Fixed to STOP; caught exactly as pinned rule 16 intends.
+- D15: Click input for QA runs = CDP Input.dispatchMouseEvent at client coords derived from bridge rects (design→client via canvas getBoundingClientRect + Godot 'keep' letterbox math). xdotool also works but CDP is deterministic. Headless=new chromium does NOT boot Godot WebGL reliably; xvfb kiosk + swiftshader flags do.
+- D16: Deploy verification chain: gh-pages tip == local build commit; Pages source branch switched main→gh-pages; curl 200 + title "Shelf Life". Note: GitHub auto-gzips wasm on-wire (35MB → 8MB), matching shadow-form-spike behavior.
+
