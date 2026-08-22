@@ -1,0 +1,6 @@
+# Godot build output — regenerable, never committed (pinned rule 10)
+build/
+.godot/
+.import/
+*.tmp
+.env
