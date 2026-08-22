@@ -16,7 +16,9 @@ static func make(item: Dictionary, selected: bool, hinted: bool,
 	sb.set_border_width_all(2)
 	sb.border_color = Color(0, 0, 0, 0.35)
 	panel.add_theme_stylebox_override("panel", sb)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# STOP: the card itself receives gui_input (select/flip). Children stay IGNORE
+	# so clicks land on the card, not the labels.
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	if selected:
 		sb.border_color = Color.WHITE

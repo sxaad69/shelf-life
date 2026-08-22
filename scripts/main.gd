@@ -63,6 +63,70 @@ func _start_level(lv: int) -> void:
 	open_btn.disabled = false
 	_render_all()
 	print("[SHELF LIFE answer key] ", state.serialize_manifest())
+	_publish_debug_state()
+
+
+## Web-only debug bridge for rule-16 QA: exposes the full game state to
+## JavaScript so the CDP playtest can plan REAL UI clicks (it still clicks
+## and solves through the actual interface).
+func _publish_debug_state() -> void:
+	if not OS.has_feature("web"):
+		return
+	# Rects are only valid after the container pass; measure on a later frame.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_publish_debug_state_now()
+
+
+func _publish_debug_state_now() -> void:
+	if not OS.has_feature("web"):
+		return
+	var tray_desc: Array = []
+	for it in state.tray:
+		tray_desc.append({
+			"cat": it["cat"], "w": it["w"], "exp": it["exp"],
+			"face_out": it["face_out"], "id": it["id"],
+		})
+	var shelf_desc: Array = []
+	for bay in range(state.bays):
+		var col: Array = []
+		for row in range(2):
+			var it = state.shelf[bay][row]
+			col.append(null if it == null else {"cat": it["cat"], "w": it["w"],
+					"exp": it["exp"], "face_out": it["face_out"], "id": it["id"]})
+		shelf_desc.append(col)
+	var btn_rects := {}
+	for b in find_children("*", "Button", true, false):
+		var btn := b as Button
+		var g := btn.get_global_rect()
+		btn_rects[btn.text] = {"x": g.position.x + g.size.x / 2.0, "y": g.position.y + g.size.y / 2.0}
+	# tray cards + shelf cells: live rects keyed for the QA playtest
+	var tray_rects: Array = []
+	for c in tray_row.get_children():
+		var g2 := (c as Control).get_global_rect()
+		tray_rects.append({"x": g2.position.x + g2.size.x / 2.0, "y": g2.position.y + g2.size.y / 2.0})
+	var cell_rects: Array = []
+	for bay in range(bay_cells.size()):
+		var colr: Array = []
+		for row in range(2):
+			var g3 := (bay_cells[bay][row] as Control).get_global_rect()
+			colr.append({"x": g3.position.x + g3.size.x / 2.0, "y": g3.position.y + g3.size.y / 2.0})
+		cell_rects.append(colr)
+	var payload := JSON.stringify({
+		"level": level, "seed": state.seed_value, "bays": state.bays,
+		"rules": state.active_rules, "tray": tray_desc, "shelf": shelf_desc,
+		"hints_left": state.hints_left, "skips_used": state.skips_used,
+		"buttons": btn_rects, "status": status_lbl.text,
+		"tray_rects": tray_rects, "cell_rects": cell_rects,
+	})
+	var eval_js := "
+		(window.__shelfLifeState = function(p) { window.__SL_STATE = p; return true; })(%s);
+	" % payload
+	JavaScriptBridge.eval(eval_js, true)
+
+
+func _debug_state_refresh() -> void:
+	_publish_debug_state()
 
 
 # =====================================================================
@@ -346,6 +410,7 @@ func _on_tray_card_input(ev: InputEvent, idx: int) -> void:
 			selected = {} if _same_selection({"from": "tray", "idx": idx}) else {"from": "tray", "idx": idx}
 			audited = false
 			_render_all()
+			_debug_state_refresh()
 
 
 func _on_card_input_in_cell(ev: InputEvent, bay: int, row: int) -> void:
@@ -392,6 +457,7 @@ func _after_move() -> void:
 	audited = false
 	status_lbl.text = ""
 	_render_all()
+	_debug_state_refresh()
 
 
 # =====================================================================
@@ -418,6 +484,7 @@ func _on_open_shop() -> void:
 		status_lbl.text = msg
 		status_lbl.add_theme_color_override("font_color", COL_BAD)
 		audio.play("buzz")
+	_publish_debug_state()
 
 
 func _on_hint() -> void:

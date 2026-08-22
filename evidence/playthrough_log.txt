@@ -1,0 +1,28 @@
+BOOT_CANVAS: PASS
+PASS: boot_no_crash
+canvas rect: {"left":0,"top":0,"width":1151,"height":699}
+DAY 1: level=1 bays=2 rules=FACING,WEIGHT tray=4
+PASS: day1_solvable
+PASS: day1_tray_emptied_by_real_clicks (tray=0)
+PASS: day1_all_facing_out
+post-audit status: "SHOP OPEN — every rule satisfied. Tidy."
+PASS: day1_level_complete
+  -> advanced to day 2
+DAY 2: level=2 bays=3 rules=FACING,WEIGHT tray=6
+PASS: day2_solvable
+PASS: day2_tray_emptied_by_real_clicks (tray=0)
+PASS: day2_all_facing_out
+post-audit status: "SHOP OPEN — every rule satisfied. Tidy."
+PASS: day2_level_complete
+  -> advanced to day 3
+DAY 3: level=3 bays=3 rules=FACING,WEIGHT,ADJACENCY tray=6
+PASS: day3_solvable
+PASS: day3_tray_emptied_by_real_clicks (tray=0)
+PASS: day3_all_facing_out
+post-audit status: "SHOP OPEN — every rule satisfied. Tidy."
+PASS: day3_level_complete
+CONSOLE_LINES_BEGIN
+CONSOLE_LINES_END
+PASS: zero_console_errors (0 errors)
+SUMMARY: 14/14 checks passed
+FEEL_NOTES: ["day 1: 2 bays / FACING+WEIGHT — placed all, audited OPEN SHOP","day 2: 3 bays / FACING+WEIGHT — placed all, audited OPEN SHOP","day 3: 3 bays / FACING+WEIGHT+ADJACENCY — placed all, audited OPEN SHOP"]
