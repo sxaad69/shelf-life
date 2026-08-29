@@ -146,9 +146,35 @@ func _panel_style(bg: Color, border: Color, radius := 14) -> StyleBoxFlat:
 
 
 func _build_ui() -> void:
+	# --- ROOM prototype (AM only for this preview) — ART_PASS D1/D2 ---
+	var room := CanvasLayer.new()
+	room.layer = -1
+	add_child(room)
+	var wall := TextureRect.new()
+	wall.texture = load("res://assets/art_pass/corner_shop_am/tex_wallpaper.png")
+	wall.stretch_mode = TextureRect.STRETCH_TILE
+	wall.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	wall.set_anchors_preset(Control.PRESET_FULL_RECT)
+	room.add_child(wall)
+	var counter := TextureRect.new()
+	counter.texture = load("res://assets/art_pass/corner_shop_am/tex_counterwood.png")
+	counter.stretch_mode = TextureRect.STRETCH_TILE
+	counter.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	counter.set_anchors_preset(Control.PRESET_FULL_RECT)
+	counter.anchor_top = 0.72
+	room.add_child(counter)
+	# light pool
+	var light := ColorRect.new()
+	light.color = Color(1.00, 0.94, 0.80, 0.16)
+	light.set_anchors_preset(Control.PRESET_FULL_RECT)
+	light.anchor_right = 0.55
+	light.anchor_bottom = 0.65
+	room.add_child(light)
+
 	var bg := ColorRect.new()
-	bg.color = COL_BG
+	bg.color = Color(0, 0, 0, 0)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
 	var root := VBoxContainer.new()
